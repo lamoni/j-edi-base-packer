@@ -1,0 +1,65 @@
+{
+  "builders": [
+    {
+      "type": "vmware-iso",
+      "iso_url": "http://releases.ubuntu.com/16.04.2/ubuntu-16.04.2-server-amd64.iso",
+      "iso_checksum": "2bce60d18248df9980612619ff0b34e6",
+      "iso_checksum_type": "md5",
+      "ssh_username": "juniper",
+      "ssh_password": "Juniper1",
+      "ssh_wait_timeout": "20m",
+      "http_directory" : "preseeds",
+      "http_port_min" : 9001,
+      "http_port_max" : 9001,
+      "shutdown_command": "echo 'Juniper1' | sudo -S shutdown -P now",
+      "vm_name": "j-edi-vmware",
+      "output_directory": "j-edi-vmware",
+      "boot_command": [
+        "<enter><wait><f6><esc><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+        "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+        "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+        "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+        "/install/vmlinuz<wait>",
+        " auto<wait>",
+        " console-setup/ask_detect=false<wait>",
+        " console-setup/layoutcode=us<wait>",
+        " console-setup/modelcode=pc105<wait>",
+        " debconf/frontend=noninteractive<wait>",
+        " debian-installer=en_US<wait>",
+        " fb=false<wait>",
+        " initrd=/install/initrd.gz<wait>",
+        " kbd-chooser/method=us<wait>",
+        " keyboard-configuration/layout=USA<wait>",
+        " keyboard-configuration/variant=USA<wait>",
+        " locale=en_US<wait>",
+        " netcfg/get_hostname=master1<wait>",
+        " grub-installer/bootdev=/dev/sda<wait>",
+        " noapic<wait>",
+        " preseed/url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/ks.cfg",
+        " -- <wait>",
+        "<enter><wait>"
+      ]
+    }
+  ],
+
+  "provisioners": [
+    {
+      "type": "shell",
+      "execute_command": "echo 'Juniper1' | {{ .Vars }} sudo -E -S sh '{{ .Path }}'",
+      "inline": [
+        "sudo apt-get update -y",
+        "sudo apt-get upgrade -y",
+        "sudo apt-get install git openssh-server -y",
+        "sudo wget -O bootstrap-salt.sh https://bootstrap.saltstack.com",
+        "sudo sh bootstrap-salt.sh -M -N git develop",
+        "sudo apt-get install apt-transport-https ca-certificates curl software-properties-common -y",
+        "sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -",
+        "sudo add-apt-repository \"deb [arch=amd64] https://download.docker.com/linux/ubuntu  $(lsb_release -cs) stable\"",
+        "sudo apt-get update -y",
+        "sudo apt-get install docker-ce -y",
+        "sudo docker pull gitlab/gitlab-ce",
+        "sudo docker run -d -p 8084:80 -p 3022:22 --name gitlab01 gitlab/gitlab-ce"
+      ]
+    }
+  ]
+}
